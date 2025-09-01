@@ -3,18 +3,16 @@ name: Deploy Snipe-IT to Azure Web App
 on:
   push:
     branches:
-      - main   # or your default branch
+      - main   # change if your repo uses another default branch
 
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
 
     steps:
-      # Checkout source
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # Set up PHP
       - name: Set up PHP
         uses: shivammathur/setup-php@v2
         with:
@@ -22,18 +20,18 @@ jobs:
           extensions: mbstring, bcmath, gd, pdo, pdo_mysql, zip
           tools: composer
 
-      # Install dependencies
-      - name: Install Composer dependencies
-        run: composer install --no-dev --optimize-autoloader
-
-      # Generate optimized build (optional)
-      - name: Prepare Laravel cache
+      # Check if composer.json exists before running install
+      - name: Install Composer dependencies (if composer.json exists)
         run: |
-          php artisan config:cache
-          php artisan route:cache
-          php artisan view:cache || true
+          if [ -f "composer.json" ]; then
+            composer install --no-dev --optimize-autoloader
+            php artisan config:cache || true
+            php artisan route:cache || true
+            php artisan view:cache || true
+          else
+            echo "⚠️ No composer.json found, skipping composer install."
+          fi
 
-      # Deploy to Azure Web App
       - name: Deploy to Azure Web App
         uses: azure/webapps-deploy@v3
         with:
